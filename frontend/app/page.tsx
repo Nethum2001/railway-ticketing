@@ -1,65 +1,160 @@
-import Image from "next/image";
+import Link from "next/link";
+
+import {
+  ChevronRight,
+  PhoneCall,
+  TrainFront,
+} from "lucide-react";
+
+import { JourneySearchCard } from "@/components/JourneySearchCard";
+import { Footer } from "@/components/Footer";
+import { Navbar } from "@/components/Navbar";
+import trainbackground from "../public/images/train-background.jpg";
+
+const destinations = [
+  {
+    title: "Ella",
+    image:
+      "https://images.unsplash.com/photo-1505631014436-c4685ef1f4ff?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    title: "Colombo",
+    image:
+      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    title: "Kandy",
+    image:
+      "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=900&q=80",
+  },
+  {
+    title: "Galle",
+    image:
+      "https://images.unsplash.com/photo-1517760444937-f6397edcbbcd?auto=format&fit=crop&w=900&q=80",
+  },
+];
+
+const faqs = [
+  "What is a Sri Lanka Railway commuter ticket?",
+  "How can I purchase a commuter ticket on the website?",
+  "Can I buy a commuter ticket in advance?",
+  "What is the maximum number of commuter tickets I can buy?",
+  "What are the available classes for commuter tickets?",
+];
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-[#f3f6fb] text-slate-900">
+      <section className="relative overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center" 
+          style={{ backgroundImage: `url(${trainbackground.src ?? trainbackground})` }} 
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.58)_0%,rgba(2,6,23,0.42)_42%,rgba(243,246,251,0.94)_100%)]" />
+        <div className="absolute inset-x-0 top-0">
+          <Navbar variant="overlay" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-8 px-4 pb-20 pt-28 sm:px-6 lg:px-8 lg:pb-24 lg:pt-32">
+          <div className="max-w-4xl text-center text-white">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-white/80 backdrop-blur">
+              <TrainFront className="size-3.5" />
+              RailVista Sri Lanka
+            </p>
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              Your Gateway to Exploring Sri Lanka by Train
+            </h1>
+            <p className="mx-auto mt-4 max-w-3xl text-sm leading-6 text-white/85 sm:text-base">
+              Book seats, compare routes, and plan railway journeys with a cleaner interface designed for speed and clarity.
+            </p>
+          </div>
+
+          <div className="w-full max-w-6xl">
+            <JourneySearchCard />
+          </div>
         </div>
+      </section>
+
+      <main className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <section id="services" className="scroll-mt-24 py-12 lg:py-16">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Featured Destinations</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
+              Experience Sri Lanka's breathtaking landscapes and timeless charm as the rails guide your journey.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            {destinations.map((destination) => (
+              <article
+                key={destination.title}
+                className="group relative overflow-hidden rounded-[28px] bg-slate-900 shadow-[0_18px_40px_-26px_rgba(15,23,42,0.45)]"
+              >
+                <div
+                  className="h-[520px] bg-cover bg-center transition duration-500 group-hover:scale-105"
+                  style={{ backgroundImage: `url('${destination.image}')` }}
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.18)_40%,rgba(15,23,42,0.72)_100%)]" />
+                <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                  <h3 className="text-2xl font-semibold tracking-tight drop-shadow-sm">{destination.title}</h3>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="faq" className="scroll-mt-24 py-12 lg:py-16">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Frequently Asked Questions</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">
+              Have any questions? We are here to assist you.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-4xl space-y-3">
+            {faqs.map((question) => (
+              <details key={question} className="group rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-24px_rgba(15,23,42,0.28)]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+                  <span>{question}</span>
+                  <ChevronRight className="size-4 shrink-0 text-slate-400 transition group-open:rotate-90" />
+                </summary>
+                <div className="border-t border-slate-100 px-5 pb-5 pt-3 text-sm leading-6 text-slate-500">
+                  Support is available through the contact section below and through the hotline listed in the footer.
+                </div>
+              </details>
+            ))}
+
+            <div className="pt-4 text-center">
+              <Link
+                href="#contact"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+              >
+                View all FAQs
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section id="contact" className="scroll-mt-24 py-12 lg:py-16">
+          <div className="mx-auto max-w-5xl rounded-[32px] border border-[#d8e5ff] bg-[#eff5ff] px-6 py-12 text-center shadow-[0_24px_60px_-36px_rgba(79,141,247,0.45)] sm:px-10">
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Contact Us</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+              Get in touch with our support team for any questions, to report issues, or to request help with your reservation.
+            </p>
+            <div className="mt-8 flex justify-center">
+              <Link
+                href="tel:+94112271271"
+                className="inline-flex items-center gap-2 rounded-full bg-[#4f8df7] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_-24px_rgba(79,141,247,0.95)] transition hover:bg-[#3f7ee9]"
+              >
+                <PhoneCall className="size-4" />
+                Call 011-2271271
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

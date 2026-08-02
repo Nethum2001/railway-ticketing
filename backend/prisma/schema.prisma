@@ -11,3 +11,104 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum TravelClass {
+  FIRST_CLASS
+  SECOND_CLASS
+  THIRD_CLASS
+}
+
+model User {
+  id            String           @id @default(cuid())
+  email         String           @unique
+  password      String
+  fullName      String
+  role          UserRole         @default(CUSTOMER)
+  createdAt     DateTime         @default(now())
+  bookings      Booking[]
+  idempotencies IdempotencyKey[]
+}
+
+model Station {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sequence   Int     @unique
+  createdAt  DateTime @default(now())
+}
+
+model Coach {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  description String
+  baseFare    Int
+  createdAt   DateTime @default(now())
+  seats       Seat[]
+  bookings    Booking[]
+}
+
+model Seat {
+  id        String   @id @default(cuid())
+  coachId   String
+  number    String
+  label     String
+  createdAt DateTime @default(now())
+  coach     Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
+
+  @@unique([coachId, number])
+}
+
+model Booking {
+  id                   String        @id @default(cuid())
+  bookingCode          String        @unique
+  userId               String
+  coachId              String
+  seatId               String
+  originStationId      String
+  destinationStationId  String
+  journeyDate          DateTime
+  originSequence       Int
+  destinationSequence  Int
+  passengerName        String
+  passengerNic         String
+  passengerPhone       String
+  travelClass          TravelClass
+  fare                 Int
+  status               BookingStatus @default(CONFIRMED)
+  idempotencyKey       String?       @unique
+  createdAt            DateTime      @default(now())
+  cancelledAt          DateTime?
+
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coach                Coach         @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  seat                 Seat          @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  originStation        Station       @relation("OriginStation", fields: [originStationId], references: [id], onDelete: Restrict)
+  destinationStation   Station       @relation("DestinationStation", fields: [destinationStationId], references: [id], onDelete: Restrict)
+  idempotencyRecord    IdempotencyKey?
+
+  @@index([coachId, seatId, journeyDate])
+  @@index([userId, createdAt])
+}
+
+model IdempotencyKey {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  userId      String
+  bookingId   String   @unique
+  responseJson String
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
