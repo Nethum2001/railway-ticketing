@@ -12,6 +12,7 @@ export class CoachService {
       name: coach.name,
       description: coach.description,
       baseFare: coach.baseFare,
+      travelClass: coach.travelClass,
     }));
   }
 }

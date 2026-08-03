@@ -1,8 +1,16 @@
-import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare, hash } from 'bcryptjs';
 import { RailwayStoreService } from '../railway-store/railway-store.service';
-import { AuthenticatedUser, UserRecord } from '../railway-store/railway-store.types';
+import {
+  AuthenticatedUser,
+  UserRecord,
+} from '../railway-store/railway-store.types';
 
 @Injectable()
 export class AuthService {
@@ -13,7 +21,12 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(input: { email: string; password: string; fullName: string; role?: 'CUSTOMER' | 'ADMIN' }) {
+  async register(input: {
+    email: string;
+    password: string;
+    fullName: string;
+    role?: 'CUSTOMER' | 'ADMIN';
+  }) {
     const existingUser = this.store.findUserByEmail(input.email);
 
     if (existingUser) {

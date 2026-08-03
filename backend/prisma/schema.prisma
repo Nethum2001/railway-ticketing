@@ -4,8 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -28,6 +27,11 @@ enum TravelClass {
   THIRD_CLASS
 }
 
+enum CoachClass {
+  FIRST_CLASS
+  SECOND_CLASS
+}
+
 model User {
   id            String           @id @default(cuid())
   email         String           @unique
@@ -39,11 +43,44 @@ model User {
   idempotencies IdempotencyKey[]
 }
 
-model Station {
+model Train {
+  id                   String      @id @default(cuid())
+  trainNo              String      @unique
+  trainName            String
+  startingCity         String
+  endingCity           String
+  departureTime        String
+  arrivalTime          String
+  travelTime           String
+  description          String
+  firstClassFarePerHop Int
+  secondClassFarePerHop Int
+  createdAt            DateTime    @default(now())
+  stops                TrainStop[]
+  fares                Fare[]
+  bookings             Booking[]
+}
+
+model TrainStop {
   id        String   @id @default(cuid())
-  name      String   @unique
-  sequence   Int     @unique
-  createdAt  DateTime @default(now())
+  trainId   String
+  station   String
+  time      String
+  stopOrder Int
+  createdAt DateTime @default(now())
+
+  train     Train    @relation(fields: [trainId], references: [id], onDelete: Cascade)
+
+  @@index([trainId, stopOrder])
+}
+
+model Station {
+  id                  String    @id @default(cuid())
+  name                String    @unique
+  sequence            Int       @unique
+  createdAt           DateTime  @default(now())
+  originBookings      Booking[] @relation("OriginStation")
+  destinationBookings Booking[] @relation("DestinationStation")
 }
 
 model Coach {
@@ -52,9 +89,24 @@ model Coach {
   name        String
   description String
   baseFare    Int
+  travelClass CoachClass
   createdAt   DateTime @default(now())
   seats       Seat[]
   bookings    Booking[]
+}
+
+model Fare {
+  id                 String     @id @default(cuid())
+  trainId            String
+  originStation      String
+  destinationStation String
+  travelClass        CoachClass
+  fare               Int
+  createdAt          DateTime   @default(now())
+
+  train              Train      @relation(fields: [trainId], references: [id], onDelete: Cascade)
+
+  @@index([trainId, originStation, destinationStation, travelClass])
 }
 
 model Seat {
@@ -70,45 +122,49 @@ model Seat {
 }
 
 model Booking {
-  id                   String        @id @default(cuid())
-  bookingCode          String        @unique
-  userId               String
-  coachId              String
-  seatId               String
-  originStationId      String
-  destinationStationId  String
-  journeyDate          DateTime
-  originSequence       Int
-  destinationSequence  Int
-  passengerName        String
-  passengerNic         String
-  passengerPhone       String
-  travelClass          TravelClass
-  fare                 Int
-  status               BookingStatus @default(CONFIRMED)
-  idempotencyKey       String?       @unique
-  createdAt            DateTime      @default(now())
-  cancelledAt          DateTime?
+  id                  String         @id @default(cuid())
+  bookingCode         String         @unique
+  userId              String?
+  guestKey            String?
+  trainId             String?
+  coachId             String
+  seatId              String
+  originStationId     String
+  destinationStationId String
+  journeyDate         DateTime
+  originSequence      Int
+  destinationSequence Int
+  passengerName       String
+  passengerNic        String
+  passengerPhone      String
+  travelClass         TravelClass
+  fare                Int
+  status              BookingStatus  @default(CONFIRMED)
+  idempotencyKey      String?        @unique
+  createdAt           DateTime       @default(now())
+  cancelledAt         DateTime?
 
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  coach                Coach         @relation(fields: [coachId], references: [id], onDelete: Cascade)
-  seat                 Seat          @relation(fields: [seatId], references: [id], onDelete: Cascade)
-  originStation        Station       @relation("OriginStation", fields: [originStationId], references: [id], onDelete: Restrict)
-  destinationStation   Station       @relation("DestinationStation", fields: [destinationStationId], references: [id], onDelete: Restrict)
-  idempotencyRecord    IdempotencyKey?
+  user                User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  train               Train?         @relation(fields: [trainId], references: [id], onDelete: SetNull)
+  coach               Coach          @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  seat                Seat           @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  originStation       Station        @relation("OriginStation", fields: [originStationId], references: [id], onDelete: Restrict)
+  destinationStation  Station        @relation("DestinationStation", fields: [destinationStationId], references: [id], onDelete: Restrict)
+  idempotencyRecord   IdempotencyKey?
 
   @@index([coachId, seatId, journeyDate])
   @@index([userId, createdAt])
 }
 
 model IdempotencyKey {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  userId      String
-  bookingId   String   @unique
+  id           String    @id @default(cuid())
+  key          String    @unique
+  userId       String?
+  guestKey     String?
+  bookingId    String    @unique
   responseJson String
-  createdAt   DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }

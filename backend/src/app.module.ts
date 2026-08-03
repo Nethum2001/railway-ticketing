@@ -9,6 +9,7 @@ import { NotificationModule } from './notification/notification.module';
 import { RailwayStoreModule } from './railway-store/railway-store.module';
 import { SeatModule } from './seat/seat.module';
 import { StationModule } from './station/station.module';
+import { TrainModule } from './train/train.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { StationModule } from './station/station.module';
     AuthModule,
     StationModule,
     CoachModule,
+    TrainModule,
     SeatModule,
     NotificationModule,
     BookingModule,

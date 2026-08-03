@@ -7,20 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { createBooking, getStoredToken } from "@/lib/api";
+import { createBooking, getStoredAuthSession, getStoredToken } from "@/lib/api";
 
 type PassengerFormProps = {
-  seat: string;
+  seats: string[];
   coach: string;
   from: string;
   to: string;
   date: string;
   travelClass: string;
+  trainNo?: string;
+  totalFare?: string;
+  holdToken?: string;
 };
 
-export function PassengerForm({ seat, coach, from, to, date, travelClass }: PassengerFormProps) {
+export function PassengerForm({ seats, coach, from, to, date, travelClass, trainNo, totalFare, holdToken }: PassengerFormProps) {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(() => getStoredAuthSession()?.user.fullName ?? "");
   const [nic, setNic] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,9 +32,13 @@ export function PassengerForm({ seat, coach, from, to, date, travelClass }: Pass
   async function handleConfirmBooking() {
     const token = getStoredToken();
 
-    if (!token) {
-      const currentBookingUrl = `/booking?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}&class=${encodeURIComponent(travelClass)}&coach=${encodeURIComponent(coach)}&seat=${encodeURIComponent(seat)}`;
-      router.push(`/auth?mode=login&redirectTo=${encodeURIComponent(currentBookingUrl)}`);
+    if (seats.length > 5) {
+      setError("You can book a maximum of 5 seats in one session.");
+      return;
+    }
+
+    if (!name.trim() || !nic.trim() || !phone.trim()) {
+      setError("Please provide passenger name, NIC/passport, and phone number.");
       return;
     }
 
@@ -39,32 +46,41 @@ export function PassengerForm({ seat, coach, from, to, date, travelClass }: Pass
       setIsSubmitting(true);
       setError(null);
 
-      const booking = await createBooking(
-        {
-          coachCode: coach,
-          seatNumber: seat,
-          originStation: from,
-          destinationStation: to,
-          journeyDate: date,
-          passengerName: name || "Passenger",
-          passengerNic: nic,
-          passengerPhone: phone,
-          travelClass: travelClass.replace(/\s+/g, "_").toUpperCase() as "FIRST_CLASS" | "SECOND_CLASS" | "THIRD_CLASS",
-        },
-        token,
-        crypto.randomUUID(),
-      );
+      const bookingResults = [] as Array<Awaited<ReturnType<typeof createBooking>>>;
 
+      for (const seatNumber of seats) {
+        const booking = await createBooking(
+          {
+            coachCode: coach,
+            seatNumber,
+            originStation: from,
+            destinationStation: to,
+            journeyDate: date,
+            passengerName: name || "Passenger",
+            passengerNic: nic,
+            passengerPhone: phone,
+            travelClass: travelClass.replace(/\s+/g, "_").toUpperCase() as "FIRST_CLASS" | "SECOND_CLASS" | "THIRD_CLASS",
+            holdToken,
+          },
+          token ?? undefined,
+          `${nic.trim().toLowerCase()}-${coach}-${seatNumber}-${date}`,
+        );
+
+        bookingResults.push(booking);
+      }
+
+      const firstBooking = bookingResults[0];
       const query = new URLSearchParams({
-        bookingCode: booking.bookingCode,
-        seat: booking.seatNumber,
-        coach: booking.coachCode,
-        from: booking.originStation,
-        to: booking.destinationStation,
-        date: booking.journeyDate,
-        name: booking.passengerName,
-        travelClass: booking.travelClass,
-        fare: String(booking.fare),
+        bookingCode: firstBooking.bookingCode,
+        bookingCodes: bookingResults.map((booking) => booking.bookingCode).join(","),
+        seats: bookingResults.map((booking) => booking.seatNumber).join(","),
+        coach: firstBooking.coachCode,
+        from: firstBooking.originStation,
+        to: firstBooking.destinationStation,
+        date: firstBooking.journeyDate,
+        name: firstBooking.passengerName,
+        travelClass: firstBooking.travelClass,
+        fare: String(bookingResults.reduce((accumulator, booking) => accumulator + booking.fare, 0)),
       });
 
       router.push(`/success?${query.toString()}`);
@@ -81,6 +97,11 @@ export function PassengerForm({ seat, coach, from, to, date, travelClass }: Pass
         <CardTitle className="text-2xl text-slate-900">Passenger details</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 p-6">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          {trainNo ? `Train ${trainNo} | ` : ""}
+          {from} to {to} | {coach}-{seats.join(", ")} | {travelClass.replace(/_/g, " ")}
+          {totalFare ? ` | Estimated total ${totalFare}` : ""}
+        </div>
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Name
           <Input
@@ -91,11 +112,11 @@ export function PassengerForm({ seat, coach, from, to, date, travelClass }: Pass
           />
         </label>
         <label className="grid gap-2 text-sm font-medium text-slate-700">
-          NIC
+          NIC / Passport
           <Input
             value={nic}
             onChange={(event) => setNic(event.target.value)}
-            placeholder="National identity card number"
+            placeholder="National identity card or passport number"
             className="h-12 rounded-2xl bg-white/90"
           />
         </label>
@@ -108,9 +129,6 @@ export function PassengerForm({ seat, coach, from, to, date, travelClass }: Pass
             className="h-12 rounded-2xl bg-white/90"
           />
         </label>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          Seat {coach}-{seat} will be reserved for {name || "the passenger"} in {travelClass.replace(/_/g, " ").toLowerCase()}.
-        </div>
         {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
         <Button
           type="button"

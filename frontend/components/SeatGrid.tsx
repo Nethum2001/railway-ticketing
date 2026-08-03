@@ -7,8 +7,8 @@ import { seatColumns, seatRows } from "@/components/railway-data";
 
 type SeatGridProps = {
   coachId: string;
-  selectedSeat?: string;
-  onSeatChange: (seatId: string) => void;
+  selectedSeatNumbers?: string[];
+  onSeatToggle: (seatId: string) => void;
   bookedSeatNumbers?: string[];
   hasBagRack?: boolean;
   hasToilet?: boolean;
@@ -19,18 +19,14 @@ const DESKTOP_SEAT_SIZE = "clamp(3rem, 3.2vw, 4rem)";
 
 export function SeatGrid({
   coachId,
-  selectedSeat,
-  onSeatChange,
+  selectedSeatNumbers = [],
+  onSeatToggle,
   bookedSeatNumbers = [],
   hasBagRack = true,
   hasToilet = true,
 }: SeatGridProps) {
   const bookedSeatSet = useMemo(() => new Set(bookedSeatNumbers), [bookedSeatNumbers]);
-  const availableSeats = useMemo(
-    () => Array.from({ length: 52 }, (_, index) => String(index + 1)).filter((seatNumber) => !bookedSeatSet.has(seatNumber)),
-    [bookedSeatSet]
-  );
-  const activeSeat = selectedSeat && !bookedSeatSet.has(selectedSeat) ? selectedSeat : availableSeats[0] ?? "1";
+  const selectedSeatSet = useMemo(() => new Set(selectedSeatNumbers), [selectedSeatNumbers]);
 
   const colCount = seatColumns.length;
   const rowCount = seatRows.length;
@@ -45,14 +41,14 @@ export function SeatGrid({
         seatColumns.map((_, colIndex) => {
           const seatId = String((rowIndex * colCount) + colIndex + 1);
           const state = bookedSeatSet.has(seatId) ? "booked" : "available";
-          const visualState = seatId === activeSeat ? "selected" : state;
+          const visualState = state === "booked" ? "booked" : selectedSeatSet.has(seatId) ? "selected" : "available";
           const seatType: "window" | "aisle" = colIndex === 0 || colIndex === colCount - 1 ? "window" : "aisle";
           const trackIndex = colIndex < aisleSplit ? colIndex + 1 : colIndex + 2;
 
           return { seatId, rowIndex, colIndex, trackIndex, state, visualState, seatType };
         })
       ),
-    [bookedSeatSet, activeSeat, colCount, aisleSplit]
+    [bookedSeatSet, selectedSeatSet, colCount, aisleSplit]
   );
 
   const renderSeats = (axis: "vertical" | "horizontal") =>
@@ -71,7 +67,7 @@ export function SeatGrid({
           seatType={seatType}
           onClick={() => {
             if (state === "booked") return;
-            onSeatChange(seatId);
+            onSeatToggle(seatId);
           }}
         />
       </div>

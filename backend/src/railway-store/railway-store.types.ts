@@ -1,6 +1,52 @@
 export type UserRole = 'CUSTOMER' | 'ADMIN';
 export type BookingStatus = 'CONFIRMED' | 'CANCELLED';
 export type TravelClass = 'FIRST_CLASS' | 'SECOND_CLASS' | 'THIRD_CLASS';
+export type CoachClass = 'FIRST_CLASS' | 'SECOND_CLASS';
+
+export type SeatHoldRecord = {
+  id: string;
+  holderKey: string;
+  coachId: string;
+  seatId: string;
+  journeyDate: string;
+  originSequence: number;
+  destinationSequence: number;
+  expiresAt: Date;
+};
+
+export type TrainStopRecord = {
+  station: string;
+  time: string;
+  order: number;
+};
+
+export type TrainRecord = {
+  id: string;
+  trainNo: string;
+  trainName: string;
+  startingCity: string;
+  endingCity: string;
+  departureTime: string;
+  arrivalTime: string;
+  travelTime: string;
+  description: string;
+  createdAt: Date;
+  farePerHop: {
+    FIRST_CLASS: number;
+    SECOND_CLASS: number;
+  };
+  routeStops: TrainStopRecord[];
+};
+
+export type FareRecord = {
+  id: string;
+  trainId: string;
+  originStation: string;
+  destinationStation: string;
+  travelClass: CoachClass;
+  fare: number;
+  createdAt: Date;
+};
 
 export type UserRecord = {
   id: string;
@@ -24,6 +70,7 @@ export type CoachRecord = {
   name: string;
   description: string;
   baseFare: number;
+  travelClass: CoachClass;
   createdAt: Date;
 };
 
@@ -38,7 +85,9 @@ export type SeatRecord = {
 export type BookingRecord = {
   id: string;
   bookingCode: string;
-  userId: string;
+  userId?: string | null;
+  guestKey?: string | null;
+  trainId?: string | null;
   coachId: string;
   seatId: string;
   originStationId: string;
@@ -59,7 +108,8 @@ export type BookingRecord = {
 
 export type IdempotencyRecord = {
   key: string;
-  userId: string;
+  userId?: string | null;
+  guestKey?: string | null;
   bookingId: string;
   responseJson: string;
   createdAt: Date;

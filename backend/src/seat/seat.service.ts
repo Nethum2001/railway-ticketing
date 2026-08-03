@@ -5,7 +5,13 @@ import { RailwayStoreService } from '../railway-store/railway-store.service';
 export class SeatService {
   constructor(private readonly store: RailwayStoreService) {}
 
-  getAvailability(input: { coachCode: string; originStation: string; destinationStation: string; journeyDate: string }) {
+  getAvailability(input: {
+    coachCode: string;
+    originStation: string;
+    destinationStation: string;
+    journeyDate: string;
+    holderKey?: string;
+  }) {
     const coach = this.store.getCoachByCode(input.coachCode);
     const origin = this.store.getStationByName(input.originStation);
     const destination = this.store.getStationByName(input.destinationStation);
@@ -20,10 +26,13 @@ export class SeatService {
         originStation: input.originStation,
         destinationStation: input.destinationStation,
         journeyDate: input.journeyDate,
+        holderKey: input.holderKey,
       }),
     );
 
-    const seats = Array.from({ length: 52 }, (_, index) => String(index + 1)).map((seatNumber) => ({
+    const seats = Array.from({ length: 52 }, (_, index) =>
+      String(index + 1),
+    ).map((seatNumber) => ({
       seatNumber,
       status: bookedSeatNumbers.has(seatNumber) ? 'booked' : 'available',
     }));
@@ -41,5 +50,16 @@ export class SeatService {
       },
       seats,
     };
+  }
+
+  holdSeats(input: {
+    holderKey: string;
+    coachCode: string;
+    seatNumbers: string[];
+    originStation: string;
+    destinationStation: string;
+    journeyDate: string;
+  }) {
+    return this.store.holdSeats(input);
   }
 }

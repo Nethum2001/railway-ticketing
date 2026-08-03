@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import {
   ChevronRight,
+  MapPinned,
   PhoneCall,
   TrainFront,
 } from "lucide-react";
@@ -77,6 +78,44 @@ export default function Home() {
 
       <main className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <section id="services" className="scroll-mt-24 py-12 lg:py-16">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">What we offer</h2>
+          </div>
+
+          
+          <div className="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <article className="overflow-hidden rounded-[32px] border border-[#d8e5ff] bg-white p-6 shadow-[0_24px_60px_-36px_rgba(79,141,247,0.35)]">
+              <div className="flex items-center gap-3">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-[#eef5ff] text-[#4f8df7]">
+                  <MapPinned className="size-6" />
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#4f8df7]">Segment booking</p>
+                  <h3 className="text-2xl font-semibold text-slate-900">Book intermediate stations in one journey</h3>
+                </div>
+              </div>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                Choose any origin and destination on the route, then reserve only the segment you need. The next step shows all matching trains, the seat grid, and fare comparison for the selected class.
+              </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Intermediate stations stay available for partial-route bookings.</div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Signed-in customers can auto-fill passenger details.</div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Guests can book by keeping their NIC or passport as the session key.</div>
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_24px_60px_-36px_rgba(15,23,42,0.7)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">How it works</p>
+              <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">1. Search from, to, and travel date.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">2. Pick the best train from the filtered cards.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">3. Choose class, coach, and up to 5 seats.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">4. Confirm passenger details and complete the booking.</li>
+              </ol>
+            </article>
+          </div>
+        </section>
+        <section id="destinations" className="scroll-mt-24 py-12 lg:py-16">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">Featured Destinations</h2>
             <p className="mt-3 text-sm leading-6 text-slate-500 sm:text-base">

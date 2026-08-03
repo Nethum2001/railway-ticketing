@@ -16,7 +16,7 @@ type CoachTabsProps = {
 
 export function CoachTabs({ coaches, activeCoach, onCoachChange }: CoachTabsProps) {
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(240px,1fr))] max-w-2xl">
       {coaches.map((coach) => {
         const isActive = coach.id === activeCoach;
 

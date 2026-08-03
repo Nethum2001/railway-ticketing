@@ -1,3 +1,5 @@
+import type { TrainService } from '@/components/railway-data';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3001';
 
 type ApiErrorResponse = {
@@ -73,6 +75,7 @@ export function saveAuthSession(session: AuthSession) {
   }
 
   window.localStorage.setItem('railvista.auth', JSON.stringify(session));
+  window.dispatchEvent(new Event('railvista-auth-change'));
 }
 
 export function clearAuthSession() {
@@ -81,6 +84,7 @@ export function clearAuthSession() {
   }
 
   window.localStorage.removeItem('railvista.auth');
+  window.dispatchEvent(new Event('railvista-auth-change'));
 }
 
 export async function login(input: { email: string; password: string }) {
@@ -102,6 +106,7 @@ export async function getSeatAvailability(input: {
   originStation: string;
   destinationStation: string;
   journeyDate: string;
+  holderKey?: string;
 }) {
   const params = new URLSearchParams({
     coachCode: input.coachCode,
@@ -110,11 +115,47 @@ export async function getSeatAvailability(input: {
     journeyDate: input.journeyDate,
   });
 
+  if (input.holderKey) {
+    params.set('holderKey', input.holderKey);
+  }
+
   return requestJson<{
     coach: { code: string; name: string; description: string };
     journey: { originStation: string; destinationStation: string; journeyDate: string };
     seats: Array<{ seatNumber: string; status: 'available' | 'booked' }>;
   }>(`/seats/availability?${params.toString()}`);
+}
+
+export async function holdSeats(input: {
+  holderKey: string;
+  coachCode: string;
+  seatNumbers: string[];
+  originStation: string;
+  destinationStation: string;
+  journeyDate: string;
+}) {
+  return requestJson<{ success: boolean; message?: string; expiresAt?: string }>(
+    '/seats/hold',
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export async function getTrains(input?: { from?: string; to?: string }) {
+  const params = new URLSearchParams();
+
+  if (input?.from) {
+    params.set('from', input.from);
+  }
+
+  if (input?.to) {
+    params.set('to', input.to);
+  }
+
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return requestJson<TrainService[]>(`/trains${suffix}`);
 }
 
 export async function createBooking(
@@ -128,9 +169,10 @@ export async function createBooking(
     passengerNic: string;
     passengerPhone: string;
     travelClass: 'FIRST_CLASS' | 'SECOND_CLASS' | 'THIRD_CLASS';
+    holdToken?: string;
   },
-  token: string,
-  idempotencyKey: string,
+  token?: string,
+  idempotencyKey?: string,
 ) {
   return requestJson<{
     bookingCode: string;
@@ -148,7 +190,7 @@ export async function createBooking(
     {
       method: 'POST',
       headers: {
-        'Idempotency-Key': idempotencyKey,
+        ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
       },
       body: JSON.stringify(input),
     },

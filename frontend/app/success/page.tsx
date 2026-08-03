@@ -8,7 +8,9 @@ import { buildBookingId, formatJourneyDate } from "@/components/railway-data";
 
 type SuccessSearchParams = {
   bookingCode?: string | string[];
+  bookingCodes?: string | string[];
   seat?: string | string[];
+  seats?: string | string[];
   coach?: string | string[];
   from?: string | string[];
   to?: string | string[];
@@ -24,7 +26,8 @@ function pickFirst(value: string | string[] | undefined, fallback: string) {
 
 function SuccessPageView({ searchParams }: { searchParams: SuccessSearchParams }) {
   const bookingCode = pickFirst(searchParams.bookingCode, buildBookingId("fallback"));
-  const seat = pickFirst(searchParams.seat, "A1");
+  const bookingCodes = pickFirst(searchParams.bookingCodes, bookingCode).split(",").filter(Boolean);
+  const seats = pickFirst(searchParams.seats, pickFirst(searchParams.seat, "A1")).split(",").filter(Boolean);
   const coach = pickFirst(searchParams.coach, "R1");
   const from = pickFirst(searchParams.from, "Colombo Fort");
   const to = pickFirst(searchParams.to, "Kandy");
@@ -45,7 +48,7 @@ function SuccessPageView({ searchParams }: { searchParams: SuccessSearchParams }
             <CardTitle className="text-3xl text-slate-950">Booking Successful</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_auto] lg:items-stretch">
-            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="sm:h-full grid gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Booking ID</p>
                 <p className="mt-2 text-3xl font-semibold text-slate-900">{bookingCode}</p>
@@ -58,8 +61,12 @@ function SuccessPageView({ searchParams }: { searchParams: SuccessSearchParams }
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Seat</p>
                   <p className="text-lg font-semibold text-slate-900">
-                    {coach}-{seat}
+                    {coach}-{seats.join(", ")}
                   </p>
+                </div>
+                <div className="rounded-2xl bg-slate-50 p-4 sm:col-span-2">
+                  <p className="text-sm text-slate-500">Booking codes</p>
+                  <p className="text-lg font-semibold text-slate-900">{bookingCodes.join(", ")}</p>
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Class</p>
