@@ -27,6 +27,7 @@ export class BookingService {
   async createBooking(
     user: AuthenticatedUser | undefined,
     input: {
+      trainNo?: string;
       coachCode: string;
       seatNumber: string;
       originStation: string;
@@ -67,12 +68,19 @@ export class BookingService {
     }
 
     const coach = this.store.getCoachByCode(input.coachCode);
+    const train = input.trainNo?.trim()
+      ? this.store.getTrainByNumber(input.trainNo.trim())
+      : undefined;
     const origin = this.store.getStationByName(input.originStation);
     const destination = this.store.getStationByName(input.destinationStation);
     const seat = this.store.getSeatByCoachAndNumber(
       input.coachCode,
       input.seatNumber,
     );
+
+    if (input.trainNo && !train) {
+      throw new NotFoundException('Train not found');
+    }
 
     if (!coach || !origin || !destination || !seat) {
       throw new NotFoundException('Coach, station, or seat not found');
@@ -120,6 +128,7 @@ export class BookingService {
         const bookingRecord = await this.store.createBooking({
           userId: bookingUserId,
           guestKey,
+          trainId: train?.id ?? null,
           coachId: coach.id,
           seatId: seat.id,
           originStationId: origin.id,

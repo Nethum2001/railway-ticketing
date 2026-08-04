@@ -22,6 +22,7 @@ import { Navbar } from "@/components/Navbar";
 import { getSeatAvailability, holdSeats } from "@/lib/api";
 import {
   JourneyClass,
+  type TrainService,
   buildFareMatrix,
   calculateJourneyFare,
   formatJourneyDate,
@@ -54,77 +55,56 @@ function formatMoney(amount: number) {
   return `Rs. ${amount.toLocaleString("en-LK")}`;
 }
 
-function renderFareMatrixTable(
-  label: string,
-  travelClass: JourneyClass,
-  selectedClass: JourneyClass,
-  originStation: string,
-  destinationStation: string,
-  trainNo: string,
-) {
-  const train = getTrainByNumber(trainNo) ?? trainServices[0];
-  if (!train) {
-    return null;
-  }
-
-  const matrix = buildFareMatrix(train, travelClass);
-
-  return (
-    <div className={cn("rounded-3xl border p-4", selectedClass === travelClass ? "border-orange-300 bg-orange-50/70" : "border-slate-200 bg-white")}>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">{label}</p>
-          <h4 className="text-lg font-semibold text-slate-900">{CLASS_LABELS[travelClass]}</h4>
+function FareComparisonCard({
+    train,
+    from,
+    to,
+}: {
+  train: TrainService;
+    from: string;
+    to: string;
+}) {
+    const firstFare =
+        calculateJourneyFare(
+            train,
+            from,
+            to,
+            "FIRST_CLASS"
+        );
+    const secondFare =
+        calculateJourneyFare(
+            train,
+            from,
+            to,
+            "SECOND_CLASS"
+        );
+    return (
+        <div className="rounded-2xl border bg-white p-6">
+            <h3 className="text-xl font-semibold">
+                Reservation Fare Comparison
+            </h3>
+            <div className="mt-5 rounded-xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Journey</p>
+                <p className="font-semibold text-lg">{from} → {to}</p>
+            </div>
+            <table className="mt-6 w-full">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th className="text-center sm:pb-4">First Class</th>
+                        <th className="text-center sm:pb-4">Second Class</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td className="font-medium">Reservation Fare</td>
+                        <td className="text-center font-semibold">{formatMoney(firstFare)}</td>
+                        <td className="text-center font-semibold">{formatMoney(secondFare)}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-        <span className={cn("rounded-full px-3 py-1 text-xs font-semibold", selectedClass === travelClass ? "bg-orange-600 text-white" : "bg-slate-100 text-slate-600")}>
-          {selectedClass === travelClass ? "Selected" : "Compare"}
-        </span>
-      </div>
-
-      <div className="max-h-[420px] overflow-auto rounded-2xl border border-slate-200 bg-white">
-        <table className="min-w-[720px] border-collapse text-xs">
-          <thead className="sticky top-0 bg-slate-50 text-slate-500">
-            <tr>
-              <th className="sticky left-0 z-20 border-b border-r border-slate-200 bg-slate-50 px-3 py-2 text-left font-semibold">From / To</th>
-              {train.routeStops.map((destinationStop) => (
-                <th key={destinationStop.station} className="border-b border-slate-200 px-3 py-2 text-center font-semibold">
-                  {destinationStop.station}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {matrix.map(({ originStop, cells }, rowIndex) => (
-              <tr key={originStop.station} className={rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
-                <th className="sticky left-0 z-10 border-r border-slate-200 bg-inherit px-3 py-2 text-left font-semibold text-slate-700">
-                  {originStop.station}
-                </th>
-                {cells.map((cell, columnIndex) => {
-                  const isSelectedPath = originStop.station === originStation && cell?.destinationStop.station === destinationStation;
-                  if (!cell) {
-                    return <td key={`${originStop.station}-${columnIndex}`} className="border-b border-slate-100 px-3 py-2 text-center text-slate-300">-</td>;
-                  }
-
-                  return (
-                    <td
-                      key={`${originStop.station}-${cell.destinationStop.station}`}
-                      className={cn(
-                        "border-b border-slate-100 px-3 py-2 text-center font-semibold",
-                        isSelectedPath ? "bg-orange-500 text-white" : "text-slate-700",
-                        selectedClass === travelClass && isSelectedPath ? "shadow-inner" : ""
-                      )}
-                    >
-                      {formatMoney(cell.fare)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    );
 }
 
 export function SeatSelectionClient({
@@ -336,8 +316,8 @@ export function SeatSelectionClient({
               </span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4 p-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
-            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <CardContent className="grid gap-4 p-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:h-full">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Starting city</p>
@@ -358,50 +338,37 @@ export function SeatSelectionClient({
               </div>
               <div className="rounded-2xl border border-dashed border-orange-200 bg-orange-50 p-4 text-sm text-slate-700">
                 <p className="font-semibold text-slate-900">Route preview</p>
-                <p className="mt-2">Expected arrival at {fareComparisonStops.destinationStop.station}: {fareComparisonStops.arrivalTime}</p>
-                <p>Expected reach time from {initialFrom}: {fareComparisonStops.arrivalTime}</p>
+                <p className="mt-2">Expected departure from {fareComparisonStops.originStop.station}: {fareComparisonStops.departureTime}</p>
+                <p>Expected arrival time at {fareComparisonStops.destinationStop.station}: {fareComparisonStops.arrivalTime}</p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">Travel time {train.travelTime}</span>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{train.description}</span>
                 <Dialog>
                   <DialogTrigger asChild>
-                    <span className="inline-flex h-8 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+                    <button
+                      type="button"
+                      className="inline-flex h-8 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
                       View reservation fares
-                    </span>
+                    </button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-6xl">
+                  <DialogContent className="max-w-lg">
                     <DialogHeader>
-                      <DialogTitle className="text-2xl">Reservation fares for {train.trainName}</DialogTitle>
-                      <DialogDescription>
-                        Compare first and second class fares. The selected journey segment is highlighted in the fare matrix.
-                      </DialogDescription>
+                      <DialogTitle>Reservation Fare Comparison</DialogTitle>
+                        <DialogDescription>Compare reservation fares for your selected journey.</DialogDescription>
                     </DialogHeader>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {["FIRST_CLASS", "SECOND_CLASS"].map((value) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setFareDialogClass(value as JourneyClass)}
-                          className={cn(
-                            "rounded-full px-4 py-2 text-sm font-semibold transition",
-                            fareDialogClass === value ? "bg-orange-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                          )}
-                        >
-                          {CLASS_LABELS[value as JourneyClass]}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="grid gap-4 xl:grid-cols-2">
-                      {renderFareMatrixTable("Comparison table", "FIRST_CLASS", fareDialogClass, initialFrom, initialTo, train.trainNo)}
-                      {renderFareMatrixTable("Comparison table", "SECOND_CLASS", fareDialogClass, initialFrom, initialTo, train.trainNo)}
-                    </div>
+                    <FareComparisonCard
+                      train={train}
+                      from={initialFrom}
+                      to={initialTo}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
             </div>
 
-            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:h-full">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-700">Travel class</p>

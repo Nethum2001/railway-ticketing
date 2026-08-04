@@ -38,7 +38,7 @@ model User {
   password      String
   fullName      String
   role          UserRole         @default(CUSTOMER)
-  createdAt     DateTime         @default(now())
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
   bookings      Booking[]
   idempotencies IdempotencyKey[]
 }
@@ -55,7 +55,7 @@ model Train {
   description          String
   firstClassFarePerHop Int
   secondClassFarePerHop Int
-  createdAt            DateTime    @default(now())
+  createdAt            DateTime    @default(now()) @db.Timestamptz(3)
   stops                TrainStop[]
   fares                Fare[]
   bookings             Booking[]
@@ -67,7 +67,7 @@ model TrainStop {
   station   String
   time      String
   stopOrder Int
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   train     Train    @relation(fields: [trainId], references: [id], onDelete: Cascade)
 
@@ -78,7 +78,7 @@ model Station {
   id                  String    @id @default(cuid())
   name                String    @unique
   sequence            Int       @unique
-  createdAt           DateTime  @default(now())
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
   originBookings      Booking[] @relation("OriginStation")
   destinationBookings Booking[] @relation("DestinationStation")
 }
@@ -90,7 +90,7 @@ model Coach {
   description String
   baseFare    Int
   travelClass CoachClass
-  createdAt   DateTime @default(now())
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
   seats       Seat[]
   bookings    Booking[]
 }
@@ -102,7 +102,7 @@ model Fare {
   destinationStation String
   travelClass        CoachClass
   fare               Int
-  createdAt          DateTime   @default(now())
+  createdAt          DateTime   @default(now()) @db.Timestamptz(3)
 
   train              Train      @relation(fields: [trainId], references: [id], onDelete: Cascade)
 
@@ -114,7 +114,7 @@ model Seat {
   coachId   String
   number    String
   label     String
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
   coach     Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
   bookings  Booking[]
 
@@ -141,8 +141,8 @@ model Booking {
   fare                Int
   status              BookingStatus  @default(CONFIRMED)
   idempotencyKey      String?        @unique
-  createdAt           DateTime       @default(now())
-  cancelledAt         DateTime?
+  createdAt           DateTime       @default(now()) @db.Timestamptz(3)
+  cancelledAt         DateTime?      @db.Timestamptz(3)
 
   user                User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   train               Train?         @relation(fields: [trainId], references: [id], onDelete: SetNull)
@@ -163,7 +163,7 @@ model IdempotencyKey {
   guestKey     String?
   bookingId    String    @unique
   responseJson String
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
 
   user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   booking      Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)

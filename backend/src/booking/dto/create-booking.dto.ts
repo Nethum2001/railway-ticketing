@@ -7,6 +7,10 @@ import {
 } from 'class-validator';
 
 export class CreateBookingDto {
+  @IsOptional()
+  @IsString()
+  trainNo?: string;
+
   @IsString()
   coachCode!: string;
 

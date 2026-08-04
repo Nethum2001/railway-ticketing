@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ReservationFareDialog } from "@/components/ReservationFareDialog";
 
 import {
   ChevronRight,
@@ -11,27 +12,31 @@ import { JourneySearchCard } from "@/components/JourneySearchCard";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import trainbackground from "../public/images/train-background.jpg";
+import colombo from "../public/images/colombo.webp";
+import demodara from "../public/images/Demodara.webp";
+import idalgashinna from "../public/images/idalgashinna.jpg";
+import kadugannawa from "../public/images/Kadugannawa.jpeg";
 
 const destinations = [
   {
-    title: "Ella",
-    image:
-      "https://images.unsplash.com/photo-1505631014436-c4685ef1f4ff?auto=format&fit=crop&w=900&q=80",
-  },
-  {
     title: "Colombo",
     image:
-      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=900&q=80",
+      colombo.src,
   },
   {
-    title: "Kandy",
+    title: "Kadugannawa",
     image:
-      "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?auto=format&fit=crop&w=900&q=80",
+      kadugannawa.src,
   },
   {
-    title: "Galle",
+    title: "Idalgashinna",
     image:
-      "https://images.unsplash.com/photo-1517760444937-f6397edcbbcd?auto=format&fit=crop&w=900&q=80",
+      idalgashinna.src,
+  },
+  {
+    title: "Demodara",
+    image:
+      demodara.src,
   },
 ];
 
@@ -70,8 +75,14 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="w-full max-w-6xl">
+          <div className="w-full max-w-6xl space-y-5">
             <JourneySearchCard />
+              <div className="flex justify-center">
+              <ReservationFareDialog
+                trainNo="1005"
+                trainName="Scenic Valley Limited"
+              />
+            </div>
           </div>
         </div>
       </section>

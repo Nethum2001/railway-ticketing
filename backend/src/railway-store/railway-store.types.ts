@@ -71,6 +71,8 @@ export type CoachRecord = {
   description: string;
   baseFare: number;
   travelClass: CoachClass;
+  hasBagRack: boolean;
+  hasToilet: boolean;
   createdAt: Date;
 };
 

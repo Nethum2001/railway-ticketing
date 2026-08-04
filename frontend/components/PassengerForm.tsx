@@ -51,6 +51,7 @@ export function PassengerForm({ seats, coach, from, to, date, travelClass, train
       for (const seatNumber of seats) {
         const booking = await createBooking(
           {
+            trainNo,
             coachCode: coach,
             seatNumber,
             originStation: from,
@@ -97,11 +98,6 @@ export function PassengerForm({ seats, coach, from, to, date, travelClass, train
         <CardTitle className="text-2xl text-slate-900">Passenger details</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 p-6">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          {trainNo ? `Train ${trainNo} | ` : ""}
-          {from} to {to} | {coach}-{seats.join(", ")} | {travelClass.replace(/_/g, " ")}
-          {totalFare ? ` | Estimated total ${totalFare}` : ""}
-        </div>
         <label className="grid gap-2 text-sm font-medium text-slate-700">
           Name
           <Input

@@ -160,6 +160,7 @@ export async function getTrains(input?: { from?: string; to?: string }) {
 
 export async function createBooking(
   input: {
+    trainNo?: string;
     coachCode: string;
     seatNumber: string;
     originStation: string;
@@ -174,18 +175,7 @@ export async function createBooking(
   token?: string,
   idempotencyKey?: string,
 ) {
-  return requestJson<{
-    bookingCode: string;
-    coachCode: string;
-    seatNumber: string;
-    originStation: string;
-    destinationStation: string;
-    journeyDate: string;
-    passengerName: string;
-    travelClass: 'FIRST_CLASS' | 'SECOND_CLASS' | 'THIRD_CLASS';
-    fare: number;
-    status: string;
-  }>(
+  return requestJson<BookingResponse>(
     '/bookings',
     {
       method: 'POST',
@@ -194,6 +184,204 @@ export async function createBooking(
       },
       body: JSON.stringify(input),
     },
+    token,
+  );
+}
+
+export type BookingResponse = {
+  id: string;
+  bookingCode: string;
+  coachCode: string;
+  seatNumber: string;
+  originStation: string;
+  destinationStation: string;
+  journeyDate: string;
+  passengerName: string;
+  passengerNic: string;
+  passengerPhone: string;
+  travelClass: 'FIRST_CLASS' | 'SECOND_CLASS' | 'THIRD_CLASS';
+  fare: number;
+  status: string;
+  createdAt: string;
+  cancelledAt: string | null;
+};
+
+export async function getMyBookings(token: string) {
+  return requestJson<BookingResponse[]>('/bookings/me', undefined, token);
+}
+
+export type AdminAnalyticsPoint = {
+  key: string;
+  label: string;
+  revenue: number;
+  bookings: number;
+  occupancy: number;
+};
+
+export type AdminOverview = {
+  period: 'daily' | 'weekly' | 'monthly';
+  points: AdminAnalyticsPoint[];
+  totals: {
+    revenue: number;
+    bookings: number;
+    occupancyRate: number;
+    activeTrains: number;
+    activeCoaches: number;
+  };
+};
+
+export async function getAdminOverview(
+  period: 'daily' | 'weekly' | 'monthly',
+  token: string,
+) {
+  return requestJson<AdminOverview>(
+    `/admin/analytics/overview?period=${period}`,
+    undefined,
+    token,
+  );
+}
+
+export async function getAdminCoachStatus(
+  trainNo: string,
+  journeyDate: string,
+  token: string,
+) {
+  return requestJson<
+    Array<{
+      trainNo: string;
+      coachCode: string;
+      coachName: string;
+      travelClass: 'FIRST_CLASS' | 'SECOND_CLASS';
+      bookedSeatCount: number;
+      totalSeatCount: number;
+      occupancyRate: number;
+      hasBagRack: boolean;
+      hasToilet: boolean;
+    }>
+  >(
+    `/admin/trains/${encodeURIComponent(trainNo)}/coaches/status?journeyDate=${journeyDate}`,
+    undefined,
+    token,
+  );
+}
+
+export async function getAdminUsers(token: string) {
+  return requestJson<
+    Array<{ id: string; email: string; fullName: string; createdAt: string }>
+  >('/admin/users/admins', undefined, token);
+}
+
+export async function promoteAdmin(email: string, token: string) {
+  return requestJson<{ id: string; email: string; fullName: string; role: string }>(
+    '/admin/users/admins',
+    {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    },
+    token,
+  );
+}
+
+export async function removeAdmin(userId: string, token: string) {
+  return requestJson<{ id: string; email: string; fullName: string; role: string }>(
+    `/admin/users/admins/${userId}`,
+    {
+      method: 'DELETE',
+    },
+    token,
+  );
+}
+
+export async function createAdminTrain(
+  input: {
+    trainNo: string;
+    trainName: string;
+    startingCity: string;
+    endingCity: string;
+    departureTime: string;
+    arrivalTime: string;
+    travelTime: string;
+    description: string;
+    farePerHop: { FIRST_CLASS: number; SECOND_CLASS: number };
+    routeStops: Array<{ station: string; time: string }>;
+  },
+  token: string,
+) {
+  return requestJson('/admin/trains', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  }, token);
+}
+
+export async function updateAdminTrain(
+  trainNo: string,
+  input: Partial<{
+    trainName: string;
+    startingCity: string;
+    endingCity: string;
+    departureTime: string;
+    arrivalTime: string;
+    travelTime: string;
+    description: string;
+    farePerHop: { FIRST_CLASS: number; SECOND_CLASS: number };
+  }>,
+  token: string,
+) {
+  return requestJson(`/admin/trains/${encodeURIComponent(trainNo)}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+    token,
+  );
+}
+
+export async function removeAdminTrain(trainNo: string, token: string) {
+  return requestJson<{ success: boolean }>(
+    `/admin/trains/${encodeURIComponent(trainNo)}`,
+    { method: 'DELETE' },
+    token,
+  );
+}
+
+export async function createAdminCoach(
+  input: {
+    code: string;
+    name: string;
+    description: string;
+    baseFare: number;
+    travelClass: 'FIRST_CLASS' | 'SECOND_CLASS';
+    hasBagRack?: boolean;
+    hasToilet?: boolean;
+  },
+  token: string,
+) {
+  return requestJson('/admin/coaches', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  }, token);
+}
+
+export async function updateCoachAmenities(
+  trainNo: string,
+  coachCode: string,
+  input: { hasBagRack?: boolean; hasToilet?: boolean },
+  token: string,
+) {
+  return requestJson(
+    `/admin/trains/${encodeURIComponent(trainNo)}/coaches/${encodeURIComponent(coachCode)}/amenities`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    },
+    token,
+  );
+}
+
+export async function removeAdminCoach(trainNo: string, coachCode: string, token: string) {
+  return requestJson<{ success: boolean }>(
+    `/admin/trains/${encodeURIComponent(trainNo)}/coaches/${encodeURIComponent(coachCode)}`,
+    { method: 'DELETE' },
     token,
   );
 }

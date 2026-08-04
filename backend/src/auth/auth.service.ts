@@ -25,7 +25,6 @@ export class AuthService {
     email: string;
     password: string;
     fullName: string;
-    role?: 'CUSTOMER' | 'ADMIN';
   }) {
     const existingUser = this.store.findUserByEmail(input.email);
 
@@ -38,7 +37,7 @@ export class AuthService {
       email: input.email,
       passwordHash,
       fullName: input.fullName,
-      role: input.role,
+      role: 'CUSTOMER',
     });
 
     if (!user) {

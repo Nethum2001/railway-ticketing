@@ -129,6 +129,15 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
                 </div>
 
                 <div className="mt-4 flex gap-2">
+                  {session.user.role === "ADMIN" && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setMenuOpen(false)}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      Admin dashboard
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     onClick={() => setMenuOpen(false)}

@@ -23,12 +23,14 @@ import { randomUUID } from 'crypto';
 import {
   FareRecord,
   BookingRecord,
+  CoachClass,
   CoachRecord,
   IdempotencyRecord,
   SeatRecord,
   SeatHoldRecord,
   StationRecord,
   TrainRecord,
+  UserRole,
   UserRecord,
 } from './railway-store.types';
 import {
@@ -55,6 +57,8 @@ export type BookingSearchFilters = {
 @Injectable()
 export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RailwayStoreService.name);
+  private readonly dbTimezone =
+    process.env.DB_TIMEZONE?.trim() || 'Asia/Colombo';
   private readonly prisma = new PrismaClient({
     adapter: new PrismaPg({
       connectionString:
@@ -71,6 +75,10 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
   private readonly fares = new Map<string, FareRecord>();
   private readonly seats = new Map<string, SeatRecord>();
   private readonly seatsByCoachAndNumber = new Map<string, SeatRecord>();
+  private readonly coachAmenities = new Map<
+    string,
+    { hasBagRack: boolean; hasToilet: boolean }
+  >();
   private readonly bookings = new Map<string, BookingRecord>();
   private readonly bookingsByUser = new Map<string, string[]>();
   private readonly idempotency = new Map<string, IdempotencyRecord>();
@@ -82,12 +90,28 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     await this.prisma.$connect();
+    await this.configureDatabaseTimezone();
     await this.ensureSeedData();
     await this.loadCaches();
   }
 
   async onModuleDestroy() {
     await this.prisma.$disconnect();
+  }
+
+  private async configureDatabaseTimezone() {
+    if (!/^[A-Za-z0-9_+\-/]+$/.test(this.dbTimezone)) {
+      this.logger.warn(
+        `Invalid DB_TIMEZONE value: ${this.dbTimezone}. Falling back to UTC.`,
+      );
+      await this.prisma.$executeRawUnsafe("SET TIME ZONE 'UTC'");
+      return;
+    }
+
+    await this.prisma.$executeRawUnsafe(
+      `SET TIME ZONE '${this.dbTimezone}'`,
+    );
+    this.logger.log(`Database timezone set to ${this.dbTimezone}`);
   }
 
   getStations(): StationRecord[] {
@@ -177,6 +201,261 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
 
   findUserById(userId: string) {
     return this.users.get(userId);
+  }
+
+  getUsersByRole(role: UserRole) {
+    return Array.from(this.users.values()).filter((user) => user.role === role);
+  }
+
+  async setUserRoleById(userId: string, role: UserRole) {
+    const existing = this.users.get(userId);
+    if (!existing) {
+      return undefined;
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+    });
+
+    const user = this.toUserRecord(updated);
+    this.users.set(user.id, user);
+    this.usersByEmail.set(user.email, user.id);
+    return user;
+  }
+
+  async setUserRoleByEmail(email: string, role: UserRole) {
+    const existing = this.findUserByEmail(email);
+    if (!existing) {
+      return undefined;
+    }
+
+    return this.setUserRoleById(existing.id, role);
+  }
+
+  getAllBookings() {
+    return Array.from(this.bookings.values());
+  }
+
+  async createTrain(input: {
+    trainNo: string;
+    trainName: string;
+    startingCity: string;
+    endingCity: string;
+    departureTime: string;
+    arrivalTime: string;
+    travelTime: string;
+    description: string;
+    farePerHop: { FIRST_CLASS: number; SECOND_CLASS: number };
+    routeStops: Array<{ station: string; time: string }>;
+  }) {
+    const existing = this.getTrainByNumber(input.trainNo);
+    if (existing) {
+      return undefined;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const createdTrain = await tx.train.create({
+        data: {
+          trainNo: input.trainNo,
+          trainName: input.trainName,
+          startingCity: input.startingCity,
+          endingCity: input.endingCity,
+          departureTime: input.departureTime,
+          arrivalTime: input.arrivalTime,
+          travelTime: input.travelTime,
+          description: input.description,
+          firstClassFarePerHop: input.farePerHop.FIRST_CLASS,
+          secondClassFarePerHop: input.farePerHop.SECOND_CLASS,
+        },
+      });
+
+      await tx.trainStop.createMany({
+        data: input.routeStops.map((stop, index) => ({
+          trainId: createdTrain.id,
+          station: stop.station,
+          time: stop.time,
+          stopOrder: index,
+        })),
+      });
+
+      await tx.fare.createMany({
+        data: this.buildFareRows(
+          createdTrain.id,
+          input.routeStops,
+          input.farePerHop,
+        ),
+      });
+    });
+
+    await this.loadCaches();
+    return this.getTrainByNumber(input.trainNo);
+  }
+
+  async updateTrain(
+    trainNo: string,
+    input: Partial<{
+      trainName: string;
+      startingCity: string;
+      endingCity: string;
+      departureTime: string;
+      arrivalTime: string;
+      travelTime: string;
+      description: string;
+      farePerHop: { FIRST_CLASS: number; SECOND_CLASS: number };
+      routeStops: Array<{ station: string; time: string }>;
+    }>,
+  ) {
+    const existingTrain = this.getTrainByNumber(trainNo);
+    if (!existingTrain) {
+      return undefined;
+    }
+
+    const nextRouteStops =
+      input.routeStops?.map((stop) => ({
+        station: stop.station,
+        time: stop.time,
+      })) ??
+      existingTrain.routeStops
+        .slice()
+        .sort((left, right) => left.order - right.order)
+        .map((stop) => ({ station: stop.station, time: stop.time }));
+    const nextFarePerHop = input.farePerHop ?? existingTrain.farePerHop;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.train.update({
+        where: { id: existingTrain.id },
+        data: {
+          trainName: input.trainName,
+          startingCity: input.startingCity,
+          endingCity: input.endingCity,
+          departureTime: input.departureTime,
+          arrivalTime: input.arrivalTime,
+          travelTime: input.travelTime,
+          description: input.description,
+          firstClassFarePerHop: nextFarePerHop.FIRST_CLASS,
+          secondClassFarePerHop: nextFarePerHop.SECOND_CLASS,
+        },
+      });
+
+      await tx.trainStop.deleteMany({ where: { trainId: existingTrain.id } });
+      await tx.fare.deleteMany({ where: { trainId: existingTrain.id } });
+
+      await tx.trainStop.createMany({
+        data: nextRouteStops.map((stop, index) => ({
+          trainId: existingTrain.id,
+          station: stop.station,
+          time: stop.time,
+          stopOrder: index,
+        })),
+      });
+
+      await tx.fare.createMany({
+        data: this.buildFareRows(existingTrain.id, nextRouteStops, nextFarePerHop),
+      });
+    });
+
+    await this.loadCaches();
+    return this.getTrainByNumber(trainNo);
+  }
+
+  async removeTrain(trainNo: string) {
+    const existing = this.getTrainByNumber(trainNo);
+    if (!existing) {
+      return false;
+    }
+
+    await this.prisma.train.delete({ where: { id: existing.id } });
+    await this.loadCaches();
+    return true;
+  }
+
+  async createCoach(input: {
+    code: string;
+    name: string;
+    description: string;
+    baseFare: number;
+    travelClass: CoachClass;
+    hasBagRack?: boolean;
+    hasToilet?: boolean;
+  }) {
+    if (this.getCoachByCode(input.code)) {
+      return undefined;
+    }
+
+    const createdCoach = await this.prisma.coach.create({
+      data: {
+        code: input.code,
+        name: input.name,
+        description: input.description,
+        baseFare: input.baseFare,
+        travelClass: input.travelClass,
+      },
+    });
+
+    await this.prisma.seat.createMany({
+      data: SEAT_NUMBERS.map((seatNumber) => ({
+        coachId: createdCoach.id,
+        number: seatNumber,
+        label: `Seat ${seatNumber}`,
+      })),
+    });
+
+    this.coachAmenities.set(createdCoach.code, {
+      hasBagRack:
+        input.hasBagRack ??
+        this.defaultCoachAmenities(createdCoach.travelClass).hasBagRack,
+      hasToilet:
+        input.hasToilet ??
+        this.defaultCoachAmenities(createdCoach.travelClass).hasToilet,
+    });
+
+    await this.loadCaches();
+    return this.getCoachByCode(createdCoach.code);
+  }
+
+  async removeCoach(coachCode: string) {
+    const coach = this.getCoachByCode(coachCode);
+    if (!coach) {
+      return 'NOT_FOUND' as const;
+    }
+
+    const hasBookings = Array.from(this.bookings.values()).some(
+      (booking) => booking.coachId === coach.id,
+    );
+
+    if (hasBookings) {
+      return 'HAS_BOOKINGS' as const;
+    }
+
+    await this.prisma.coach.delete({ where: { id: coach.id } });
+    this.coachAmenities.delete(coachCode);
+    await this.loadCaches();
+    return 'REMOVED' as const;
+  }
+
+  async updateCoachAmenities(
+    coachCode: string,
+    input: { hasBagRack?: boolean; hasToilet?: boolean },
+  ) {
+    const coach = this.getCoachByCode(coachCode);
+    if (!coach) {
+      return undefined;
+    }
+
+    const nextAmenities = {
+      hasBagRack: input.hasBagRack ?? coach.hasBagRack,
+      hasToilet: input.hasToilet ?? coach.hasToilet,
+    };
+
+    this.coachAmenities.set(coachCode, nextAmenities);
+    const updatedCoach: CoachRecord = {
+      ...coach,
+      hasBagRack: nextAmenities.hasBagRack,
+      hasToilet: nextAmenities.hasToilet,
+    };
+    this.coaches.set(coachCode, updatedCoach);
+    return updatedCoach;
   }
 
   async withSeatLock<T>(
@@ -673,6 +952,37 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
     }
 
     await this.ensureDemoBookings();
+    await this.ensureBootstrapAdmin();
+  }
+
+  private async ensureBootstrapAdmin() {
+    const adminEmail = 'testadmin@test.test';
+    const existingAdmin = await this.prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+
+    if (existingAdmin) {
+      if (existingAdmin.role !== 'ADMIN') {
+        await this.prisma.user.update({
+          where: { id: existingAdmin.id },
+          data: { role: 'ADMIN' },
+        });
+      }
+      return;
+    }
+
+    const fallbackPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD ?? 'admin12345';
+    const { hash } = await import('bcryptjs');
+    const passwordHash = await hash(fallbackPassword, 10);
+
+    await this.prisma.user.create({
+      data: {
+        email: adminEmail,
+        fullName: 'System Admin',
+        password: passwordHash,
+        role: 'ADMIN',
+      },
+    });
   }
 
   private async ensureDemoBookings() {
@@ -926,6 +1236,7 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
     this.fares.clear();
     this.seats.clear();
     this.seatsByCoachAndNumber.clear();
+    this.coachAmenities.clear();
     this.bookings.clear();
     this.bookingsByUser.clear();
     this.idempotency.clear();
@@ -963,6 +1274,10 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
     }
 
     for (const coach of coaches) {
+      this.coachAmenities.set(
+        coach.code,
+        this.defaultCoachAmenities(coach.travelClass),
+      );
       const record = this.toCoachRecord(coach);
       this.coaches.set(record.code, record);
     }
@@ -1044,6 +1359,9 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
   }
 
   private toCoachRecord(coach: Coach): CoachRecord {
+    const amenities =
+      this.coachAmenities.get(coach.code) ??
+      this.defaultCoachAmenities(coach.travelClass);
     return {
       id: coach.id,
       code: coach.code,
@@ -1051,8 +1369,18 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
       description: coach.description,
       baseFare: coach.baseFare,
       travelClass: coach.travelClass,
+      hasBagRack: amenities.hasBagRack,
+      hasToilet: amenities.hasToilet,
       createdAt: coach.createdAt,
     };
+  }
+
+  private defaultCoachAmenities(travelClass: CoachClass) {
+    if (travelClass === 'FIRST_CLASS') {
+      return { hasBagRack: true, hasToilet: true };
+    }
+
+    return { hasBagRack: true, hasToilet: false };
   }
 
   private toSeatRecord(seat: Seat): SeatRecord {
@@ -1156,5 +1484,38 @@ export class RailwayStoreService implements OnModuleInit, OnModuleDestroy {
     const numericPart = segments[segments.length - 1] ?? '0';
     const parsed = Number.parseInt(numericPart, 10);
     return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  private buildFareRows(
+    trainId: string,
+    routeStops: Array<{ station: string; time: string }>,
+    farePerHop: { FIRST_CLASS: number; SECOND_CLASS: number },
+  ) {
+    return routeStops.flatMap((originStop, originIndex) =>
+      routeStops.flatMap((destinationStop, destinationIndex) => {
+        if (destinationIndex <= originIndex) {
+          return [];
+        }
+
+        return [
+          {
+            trainId,
+            originStation: originStop.station,
+            destinationStation: destinationStop.station,
+            travelClass: 'FIRST_CLASS' as const,
+            fare:
+              (destinationIndex - originIndex) * farePerHop.FIRST_CLASS,
+          },
+          {
+            trainId,
+            originStation: originStop.station,
+            destinationStation: destinationStop.station,
+            travelClass: 'SECOND_CLASS' as const,
+            fare:
+              (destinationIndex - originIndex) * farePerHop.SECOND_CLASS,
+          },
+        ];
+      }),
+    );
   }
 }
