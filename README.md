@@ -10,34 +10,29 @@ The project is split into:
 
 ---
 
-## Quick Start (One-Shot DB + Run Apps)
+## Quick Start (Single Command)
 
-If you want to get started quickly, run the database in one command:
-
-```bash
-docker-compose up -d
-```
-
-Then start backend and frontend:
+If your environment variables are already set, the full stack can be started with one command:
 
 ```bash
-# Terminal 1
-cd backend
-npm install
-npm run start:dev
-
-# Terminal 2
-cd frontend
-npm install
-npm run dev
+docker compose up
 ```
+
+If you want to force a rebuild of the images before starting, use:
+
+```bash
+docker compose up --build
+```
+
+Use `docker compose up` for a normal start and `docker compose up --build` after code, dependency, or Dockerfile changes.
 
 Open:
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
+- PostgreSQL: localhost:5432
 
-> Note: Current `docker-compose.yml` only provisions PostgreSQL. The web and API services run locally using npm scripts.
+The compose setup now provisions PostgreSQL, runs backend migrations automatically, and starts both the API and web app in containers.
 
 ---
 
