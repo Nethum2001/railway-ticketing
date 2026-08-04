@@ -41,11 +41,41 @@ const destinations = [
 ];
 
 const faqs = [
-  "What is a Sri Lanka Railway commuter ticket?",
-  "How can I purchase a commuter ticket on the website?",
-  "Can I buy a commuter ticket in advance?",
-  "What is the maximum number of commuter tickets I can buy?",
-  "What are the available classes for commuter tickets?",
+  {
+    question: "Do I need an account to book a seat?",
+    answer:
+      "You can reserve as a guest by entering passenger details, or sign in to manage bookings from your profile. Signed-in users also get a smoother checkout experience.",
+  },
+  {
+    question: "How many seats can I select in one booking session?",
+    answer:
+      "You can select up to 5 seats per booking flow. If you need more seats, complete the first booking and start a second reservation.",
+  },
+  {
+    question: "What happens if someone else books my seat first?",
+    answer:
+      "RailVista checks real-time availability before confirmation. If a conflict is detected, you will see a clear message and can immediately pick another available seat.",
+  },
+  {
+    question: "How does seat holding work before checkout?",
+    answer:
+      "Selected seats are temporarily held for your current booking session to reduce race conditions during payment/confirmation steps.",
+  },
+  {
+    question: "Which travel classes are available right now?",
+    answer:
+      "The current customer flow supports First Class and Second Class coach selection. Fares are calculated from route segment distance and class-based fare rules.",
+  },
+  {
+    question: "Can I cancel a confirmed booking?",
+    answer:
+      "Yes. Logged-in users can view their bookings and cancel eligible reservations from the My Bookings area.",
+  },
+  {
+    question: "Is there an admin panel for operations monitoring?",
+    answer:
+      "Yes. Admin users can access the operations dashboard to track occupancy, revenue trends, coach status, and key train management actions.",
+  },
 ];
 
 export default function Home() {
@@ -101,27 +131,27 @@ export default function Home() {
                   <MapPinned className="size-6" />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#4f8df7]">Segment booking</p>
-                  <h3 className="text-2xl font-semibold text-slate-900">Book intermediate stations in one journey</h3>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#4f8df7]">Live reservation services</p>
+                  <h3 className="text-2xl font-semibold text-slate-900">Built for real-time train seat booking in Sri Lanka</h3>
                 </div>
               </div>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Choose any origin and destination on the route, then reserve only the segment you need. The next step shows all matching trains, the seat grid, and fare comparison for the selected class.
+                RailVista provides route search, class-based coach selection, and segment-aware seat availability. Hold seats, confirm passengers, and finalize bookings with protection against duplicate submissions.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Intermediate stations stay available for partial-route bookings.</div>
-                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Signed-in customers can auto-fill passenger details.</div>
-                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Guests can book by keeping their NIC or passport as the session key.</div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Search trains by origin and destination with route-based filtering.</div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Check live seat availability, select seats, and hold them before checkout.</div>
+                <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">Manage bookings after sign-in, including booking history and cancellation.</div>
               </div>
             </article>
 
             <article className="rounded-[32px] border border-slate-200 bg-slate-950 p-6 text-white shadow-[0_24px_60px_-36px_rgba(15,23,42,0.7)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">How it works</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-orange-300">Platform capabilities</p>
               <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
-                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">1. Search from, to, and travel date.</li>
-                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">2. Pick the best train from the filtered cards.</li>
-                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">3. Choose class, coach, and up to 5 seats.</li>
-                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">4. Confirm passenger details and complete the booking.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">1. JWT authentication with customer and admin role separation.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">2. Idempotent booking API to safely handle retries.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">3. Segment conflict checks and seat locking to reduce double booking.</li>
+                <li className="rounded-2xl border border-white/10 bg-white/5 p-4">4. Admin analytics for revenue, occupancy, and coach-level status.</li>
               </ol>
             </article>
           </div>
@@ -162,14 +192,14 @@ export default function Home() {
           </div>
 
           <div className="mx-auto mt-10 max-w-4xl space-y-3">
-            {faqs.map((question) => (
-              <details key={question} className="group rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-24px_rgba(15,23,42,0.28)]">
+            {faqs.map((faq) => (
+              <details key={faq.question} className="group rounded-2xl border border-slate-200 bg-white shadow-[0_12px_30px_-24px_rgba(15,23,42,0.28)]">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
-                  <span>{question}</span>
+                  <span>{faq.question}</span>
                   <ChevronRight className="size-4 shrink-0 text-slate-400 transition group-open:rotate-90" />
                 </summary>
                 <div className="border-t border-slate-100 px-5 pb-5 pt-3 text-sm leading-6 text-slate-500">
-                  Support is available through the contact section below and through the hotline listed in the footer.
+                  {faq.answer}
                 </div>
               </details>
             ))}
@@ -193,11 +223,11 @@ export default function Home() {
             </p>
             <div className="mt-8 flex justify-center">
               <Link
-                href="tel:+94112271271"
+                href="tel:+94714283876"
                 className="inline-flex items-center gap-2 rounded-full bg-[#4f8df7] px-6 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_-24px_rgba(79,141,247,0.95)] transition hover:bg-[#3f7ee9]"
               >
                 <PhoneCall className="size-4" />
-                Call 011-2271271
+                Call 0714283876
               </Link>
             </div>
           </div>
