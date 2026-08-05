@@ -15,16 +15,10 @@ The project is split into:
 If your environment variables are already set, the full stack can be started with one command:
 
 ```bash
-docker compose up
-```
-
-If you want to force a rebuild of the images before starting, use:
-
-```bash
 docker compose up --build
 ```
 
-Use `docker compose up` for a normal start and `docker compose up --build` after code, dependency, or Dockerfile changes.
+Use this command to rebuild images and start the full stack.
 
 Open:
 
@@ -33,6 +27,8 @@ Open:
 - PostgreSQL: localhost:5432
 
 The compose setup now provisions PostgreSQL, runs backend migrations automatically, and starts both the API and web app in containers.
+
+If you see a PostgreSQL authentication error (for example, Prisma `P1000`) after changing DB credentials, your local Postgres volume may still contain older credentials. Remove containers and the named volume, then start again with `docker compose up --build`.
 
 ---
 
@@ -229,7 +225,7 @@ JWT_SECRET=railvista-dev-secret
 JWT_EXPIRES_IN=8h
 
 # Optional
-REDIS_URL=
+REDIS_URL=redis://localhost:6379
 DB_TIMEZONE=Asia/Colombo
 ```
 

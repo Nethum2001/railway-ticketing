@@ -4,12 +4,12 @@ services:
     container_name: train-booking-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-familyuser}
+      POSTGRES_DB: ${DB_NAME:-train_booking}
 
     ports:
-      - "${DB_PORT}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +19,19 @@ services:
       retries: 10
       start_period: 10s
 
+  redis:
+    image: redis:7-alpine
+    container_name: train-booking-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
   backend:
     build:
       context: ./backend
@@ -27,16 +40,18 @@ services:
     restart: unless-stopped
     environment:
       PORT: 3001
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
-      DB_TIMEZONE: ${DB_TIMEZONE}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-      REDIS_URL: ${REDIS_URL}
-      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-familyuser}@postgres:5432/${DB_NAME:-train_booking}
+      DB_TIMEZONE: ${DB_TIMEZONE:-Asia/Colombo}
+      JWT_SECRET: ${JWT_SECRET:-railvista-dev-secret}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      ADMIN_BOOTSTRAP_PASSWORD: ${ADMIN_BOOTSTRAP_PASSWORD:-admin123}
     ports:
       - "3001:3001"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test:
